@@ -114,16 +114,17 @@ func NewGrammarFromString(input string) (Grammar, string) {
             }
 
             var newS string
-            if _, exist := new_symbols[rule[:2]]; exist {
-                newS = new_symbols[rule[:2]]
+            replacing_str := rule[1:len(rule)]
+            if _, exist := new_symbols[replacing_str]; exist {
+                newS = new_symbols[replacing_str]
             } else {
                 newS = alphabet[0]
-                new_symbols[rule[:2]] = newS
+                new_symbols[replacing_str] = newS
                 alphabet = alphabet[1:len(alphabet)-1]
-                grammar.rules[newS] = []string{rule[:2]}
+                grammar.rules[newS] = []string{replacing_str}
             }
 
-            grammar.rules[rule_symb][i] = newS+rule[2:]
+            grammar.rules[rule_symb][i] = rule[:1]+newS
         }
     }
 

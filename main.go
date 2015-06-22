@@ -8,7 +8,7 @@ import (
 
 func main() {
 
-	server_url := "localhost:22222"
+	server_url := "localhost:9022"
 
 	http.HandleFunc("/", indexAction)
 
