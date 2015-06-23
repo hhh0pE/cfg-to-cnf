@@ -16,7 +16,8 @@ func indexAction(w http.ResponseWriter, r *http.Request) {
 
 	if len(r.Form) > 0 {
 		cfg_input = r.Form["cfg"][0]
-		_, cnf_log = CFG.NewGrammarFromString(cfg_input)
+		cfg := CFG.NewGrammarFromString(cfg_input)
+        cnf_log = cfg.ToCNF()
 
         cnf_log = strings.Replace(cnf_log, "\n", "<br />", -1)
 	}

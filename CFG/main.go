@@ -4,6 +4,7 @@ import (
 //	"fmt"
 	"strings"
     "sort"
+//    "fmt"
 )
 
 type Grammar struct {
@@ -49,9 +50,113 @@ func (g Grammar) ToString() string {
 	return output
 }
 
-func NewGrammarFromString(input string) (Grammar, string) {
-
+func (g Grammar) ToCNF() string {
     var log string
+    log += "Eliminate Unit rules (S->A)\n"
+
+    for symb, _ := range g.rules {
+        for i:=0; i<len(g.rules[symb]); i++ {
+            s := &(g.rules[symb][i])
+            if len(*s)==1 && strings.ToUpper(*s)==*s {
+                g.rules[symb] = append(g.rules[symb], g.rules[*s]...)
+                g.rules[symb] = append(g.rules[symb][:i], g.rules[symb][i+1:]...)
+            }
+        }
+    }
+
+    log += g.ToString() + "\n"
+
+    alphabet := []string{}
+    for i:='A'; i<'A'+26; i++ {
+        if _, exist := g.rules[string(i)]; !exist {
+            alphabet = append(alphabet, string(i))
+        }
+    }
+
+    log += "Eliminate the start symbol from right-hand sides (Adding S0 rule)\n"
+    g.rules[g.first_rule+"0"] = g.rules[g.first_rule]
+
+    log += g.ToString() + "\n"
+
+    log += "Eliminate right-hand sides with more than 2 nonterminals (SFG->SX, X->FG) \n"
+
+    is_done := false
+    new_symbols := make(map[string]string)
+    for !is_done {
+        is_done = true
+
+        for rule_symb, rules := range g.rules {
+            for i, rule := range rules {
+                if len(rule)==1 || len(rule)==2 {
+                    continue
+                }
+
+                is_done = false
+
+                var newS string
+                replacing_str := rule[1:len(rule)]
+                if _, exist := new_symbols[replacing_str]; exist {
+                    newS = new_symbols[replacing_str]
+                } else {
+                    newS = alphabet[0]
+                    new_symbols[replacing_str] = newS
+                    alphabet = alphabet[1:len(alphabet)-1]
+                    g.rules[newS] = []string{replacing_str}
+                }
+
+                g.rules[rule_symb][i] = rule[:1]+newS
+            }
+        }
+    }
+
+
+    log += g.ToString() + "\n"
+
+    log += "Eliminate rules with nonsolitary terminals (Sa -> SX, X->a)\n"
+
+    is_done = false
+    for !is_done {
+        is_done = true
+        for rule_symb, rules := range g.rules {
+            for i, rule := range rules {
+                if len(rule)==1 {
+                    continue
+                }
+
+                var terminal string
+                if strings.ToLower(string(rule[0]))==string(rule[0]) { // find terminals, "a" to lower = "a"
+                    terminal = string(rule[0])
+                } else if strings.ToLower(string(rule[1]))==string(rule[1]) {
+                    terminal = string(rule[1])
+                } else {
+                    continue
+                }
+
+                is_done = false
+
+                var newS string
+                if _, exist := new_symbols[terminal]; exist {
+                    newS = new_symbols[terminal]
+                } else {
+                    newS = alphabet[0]
+                    new_symbols[terminal] = newS
+                    alphabet = alphabet[1:len(alphabet)-1]
+                    g.rules[newS] = []string{terminal}
+                }
+
+                g.rules[rule_symb][i] = strings.Replace(g.rules[rule_symb][i], terminal, newS, 1)
+
+            }
+        }
+    }
+
+
+    log += g.ToString()
+
+    return log
+}
+
+func NewGrammarFromString(input string) Grammar {
 
 	grammar := Grammar{}
 	grammar.rules = make(map[string][]string)
@@ -76,93 +181,5 @@ func NewGrammarFromString(input string) (Grammar, string) {
 		}
 	}
 
-
-
-    log += "Eliminate Unit rules (S->A)\n"
-
-    for symb, _ := range grammar.rules {
-        for i:=0; i<len(grammar.rules[symb]); i++ {
-            s := &(grammar.rules[symb][i])
-            if len(*s)==1 && strings.ToUpper(*s)==*s {
-                grammar.rules[symb] = append(grammar.rules[symb], grammar.rules[*s]...)
-                grammar.rules[symb] = append(grammar.rules[symb][:i], grammar.rules[symb][i+1:]...)
-            }
-        }
-    }
-
-    log += grammar.ToString() + "\n"
-
-    alphabet := []string{}
-    for i:='A'; i<'A'+26; i++ {
-        if _, exist := grammar.rules[string(i)]; !exist {
-            alphabet = append(alphabet, string(i))
-        }
-    }
-
-    log += "Eliminate the start symbol from right-hand sides (Adding S0 rule)\n"
-    grammar.rules[grammar.first_rule+"0"] = grammar.rules[grammar.first_rule]
-
-    log += grammar.ToString() + "\n"
-
-    log += "Eliminate right-hand sides with more than 2 nonterminals (SFG->SX, X->FG) \n"
-
-    new_symbols := make(map[string]string)
-    for rule_symb, rules := range grammar.rules {
-        for i, rule := range rules {
-            if len(rule)==1 || len(rule)==2 {
-                continue
-            }
-
-            var newS string
-            replacing_str := rule[1:len(rule)]
-            if _, exist := new_symbols[replacing_str]; exist {
-                newS = new_symbols[replacing_str]
-            } else {
-                newS = alphabet[0]
-                new_symbols[replacing_str] = newS
-                alphabet = alphabet[1:len(alphabet)-1]
-                grammar.rules[newS] = []string{replacing_str}
-            }
-
-            grammar.rules[rule_symb][i] = rule[:1]+newS
-        }
-    }
-
-    log += grammar.ToString() + "\n"
-
-    log += "Eliminate rules with nonsolitary terminals (Sa -> SX, X->a)\n"
-
-    for rule_symb, rules := range grammar.rules {
-        for i, rule := range rules {
-            if len(rule)==1 {
-                continue
-            }
-
-            var terminal string
-            if strings.ToLower(string(rule[0]))==string(rule[0]) { // find terminals, "a" to lower = "a"
-                terminal = string(rule[0])
-            } else if strings.ToLower(string(rule[1]))==string(rule[1]) {
-                terminal = string(rule[1])
-            } else {
-                continue
-            }
-
-            var newS string
-            if _, exist := new_symbols[terminal]; exist {
-                newS = new_symbols[terminal]
-            } else {
-                newS = alphabet[0]
-                new_symbols[terminal] = newS
-                alphabet = alphabet[1:len(alphabet)-1]
-                grammar.rules[newS] = []string{terminal}
-            }
-
-            grammar.rules[rule_symb][i] = strings.Replace(grammar.rules[rule_symb][i], terminal, newS, 1)
-
-        }
-    }
-
-    log += grammar.ToString()
-
-	return grammar, log
+	return grammar
 }
