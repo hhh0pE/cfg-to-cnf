@@ -135,6 +135,11 @@ func (g Grammar) ToCNF() string {
 
                 is_done = false
 
+                if len(alphabet)==1 {
+                    log += "the alphabet is not enought :(\n"
+                    return log
+                }
+
                 var newS string
                 if _, exist := new_symbols[terminal]; exist {
                     newS = new_symbols[terminal]
