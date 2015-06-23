@@ -5,6 +5,7 @@ import (
 	"strings"
     "sort"
 //    "fmt"
+    "fmt"
 )
 
 type Grammar struct {
@@ -156,6 +157,77 @@ func (g Grammar) ToCNF() string {
     return log
 }
 
+func (g Grammar) findRulesByRightSide(right_side string) []string {
+    var result []string
+
+    for symb, rules := range g.rules {
+        for _, rule := range rules {
+            if rule==right_side {
+                result = append(result, symb)
+            }
+        }
+    }
+
+    return result
+}
+
+func (g Grammar) TestString(input string) bool {
+
+    fmt.Printf(g.ToString())
+
+    matrix := make([][]string, len(input))
+    for i:=0; i<len(input); i++ {
+        matrix[i] = make([]string, len(input)-i)
+    }
+
+
+    // first line
+    for i:=0; i<len(input); i++ {
+        if symbs := g.findRulesByRightSide(string(input[i])); len(symbs)>0 {
+            matrix[0][i] = strings.Join(symbs, ",")
+        } else {
+            return false
+        }
+    }
+
+    // other line
+    for i:=1; i<len(input); i++ {
+        for a:=0; a<len(input)-i; a++ {
+            x1 := i-1
+            y1 := a
+            x2 := 0
+            y2 := len(input)-((len(input)-i)-a)
+
+            fmt.Printf("%d,%d:\n", i, a)
+
+            for loop_size:=0; loop_size<i; loop_size++ {
+                fmt.Printf("%d,%d + %d,%d\n", x1, y1, x2, y2)
+                var result []string
+                if len(matrix[x1][y1])>0 && len(matrix[x2][y2])>0 {
+                    for _, symb1 := range strings.Split(matrix[x1][y1], ",") {
+                        for _, symb2 := range strings.Split(matrix[x2][y2], ",") {
+                            result = append(result, g.findRulesByRightSide(string(symb1)+string(symb2))...)
+                        }
+                    }
+                }
+                if len(result)>0 {
+                    matrix[i][a] = strings.Join(result, ",")
+                }
+                x1--
+                x2++
+                y2--
+            }
+        }
+    }
+
+    fmt.Println(matrix[len(input)-1])
+    if len(matrix[len(input)-1][0]) > 0 {
+        return true
+    } else {
+        return false
+    }
+}
+
 func NewGrammarFromString(input string) Grammar {
 
 	grammar := Grammar{}
@@ -165,8 +237,9 @@ func NewGrammarFromString(input string) Grammar {
 	lines := strings.Split(input, "\n")
 
 	for _, line := range lines {
+        line = strings.Replace(line, "->", "→", 1)
 		input_arr := strings.FieldsFunc(line, func(c rune) bool {
-			if c == '-' || c == '>' || c == '|' || c == ' ' || c == '\r' {
+			if c == '→' || c == '|' || c == ' ' || c == '\r' {
 				return true
 			}
 

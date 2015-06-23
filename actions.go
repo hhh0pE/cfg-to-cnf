@@ -4,6 +4,7 @@ import (
 	"github.com/hhh0pE/cfg-to-cnf/CFG"
 	"net/http"
     "strings"
+    "fmt"
 )
 
 func indexAction(w http.ResponseWriter, r *http.Request) {
@@ -17,6 +18,7 @@ func indexAction(w http.ResponseWriter, r *http.Request) {
 	if len(r.Form) > 0 {
 		cfg_input = r.Form["cfg"][0]
 		cfg := CFG.NewGrammarFromString(cfg_input)
+        fmt.Println(cfg.ToString())
         cnf_log = cfg.ToCNF()
 
         cnf_log = strings.Replace(cnf_log, "\n", "<br />", -1)
